@@ -6,7 +6,7 @@ const swaggerDocument = {
   info: {
     title: 'Bajaj Broking api SDK',
     version: '1',
-    description: 'Trading SDK Wrapper Assignment',
+    description: 'bajaj placement assignment - Trading SDK',
   },
   servers: [
     { url: 'http://localhost:3000/api/v1', description: 'Local dev server' }
@@ -14,7 +14,7 @@ const swaggerDocument = {
   paths: {
     '/instruments': {
       get: {
-        summary: 'Get all tradable instruments',
+        summary: 'Get all the instruments',
         responses: { '200': { description: 'List of instruments' } }
       }
     },
@@ -27,7 +27,7 @@ const swaggerDocument = {
               schema: {
                 type: 'object',
                 properties: {
-                  symbol: { type: 'string', example: 'RELIANCE' },
+                  symbol: { type: 'string', example: 'BAJAJ' },
                   type: { type: 'string', enum: ['BUY', 'SELL'] },
                   style: { type: 'string', enum: ['MARKET', 'LIMIT'] },
                   quantity: { type: 'number', example: 10 },
@@ -42,8 +42,32 @@ const swaggerDocument = {
     },
     '/portfolio': {
       get: {
-        summary: 'Get User Portfolio & Cash',
+        summary: "Get User Portfolio- all holdings and total portfolio value and Cash ",
         responses: { '200': { description: 'Portfolio data' } }
+      }
+    },
+    '/trades':{
+      get : {
+        summary: "get all the executed trades user has made , can add query parameter 'all=something' to get all trades even non executed ones" ,
+        responses: {'200': {description :'excuted trades'}}
+      }
+    },
+    '/orders/{id}':{
+      get : {
+        summary : "get status of a particular order with order id" ,
+        parameters :[
+          {
+            name: 'id',        
+            in: 'path',        
+            required: true,    
+            schema: {
+              type: 'string',
+              example: '550e8400-e29b-41d4-a716-446655440000'
+            },
+            description: 'unique Order ID'
+          }
+        ] ,
+        responses: {'200':{description : 'order'}}
       }
     }
   }
@@ -51,5 +75,4 @@ const swaggerDocument = {
 
 export const setupSwagger = (app: Express) => {
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-  console.log('📄 Swagger Docs available at http://localhost:3000/docs');
 };
