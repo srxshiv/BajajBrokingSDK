@@ -4,7 +4,7 @@ import { Express } from 'express';
 const swaggerDocument = {
   openapi: '3.0.0',
   info: {
-    title: 'Bajaj Broking api SDK',
+    title: 'Bajaj Broking api',
     version: '1',
     description: 'bajaj placement assignment - Trading SDK',
   },
@@ -62,7 +62,7 @@ const swaggerDocument = {
             required: true,    
             schema: {
               type: 'string',
-              example: '550e8400-e29b-41d4-a716-446655440000'
+              example: '7aec6fcc-fceb-4591-9e40-c79e2004f2f3'
             },
             description: 'unique Order ID'
           }
