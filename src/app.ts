@@ -5,7 +5,7 @@ import apiRoutes from './routes/api';
 import { logger } from './config/logger';
 import { setupSwagger } from './config/swagger';
 import { initDB } from './config/db';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response , NextFunction } from 'express';
 
 const app = express();
 const PORT = 3000;
@@ -15,18 +15,17 @@ setupSwagger(app);
 app.use(cors());
 app.use(bodyParser.json());
 
-app.use((req, res, next) => {
+app.use((req : Request, res : Response, next : NextFunction) => {
     logger.info(`${req.method} ${req.url}`);
     next();
 });
 
 app.use('/api/v1', apiRoutes);
 
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: any, req: Request, res: Response) => {
   logger.error(`Unhandled Error: ${err.message}`);
   res.status(500).json({
     error: "Internal Server Error",
-    requestId: req.headers['x-request-id'] 
   });
 });
 

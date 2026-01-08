@@ -47,7 +47,7 @@ export const initDB = async () => {
     console.log("addind mock data in instruments")
     
     await db.run(`INSERT INTO instruments (symbol, exchange, instrumentType, lastTradedPrice) VALUES 
-      ('Bajaj', 'NSE', 'EQUITY', 2000),
+      ('BAJAJ', 'NSE', 'EQUITY', 2000),
       ('NIFTY50', 'NSE', 'INDEX', 4000),
       ('TCS', 'BSE', 'EQUITY', 2500),
       ('INFY', 'BSE', 'EQUITY', 1000)`);

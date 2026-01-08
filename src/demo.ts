@@ -6,32 +6,34 @@ async function main() {
   console.log("🚀 Starting Trading Simulation...\n");
 
   try {
-    // 1. View Market Data
-    console.log("1. Fetching Instruments...");
+    // View Instruments
+    console.log("Fetching Instruments...");
     const instruments = await sdk.getInstruments();
     console.table(instruments);
 
-    // 2. Check Wallet before trading
-    console.log("\n2. Checking Wallet...");
+    // Check Wallet before trading 
+    console.log("\n fetching Wallet and portfolio and total portfolio value...");
     let portfolio = await sdk.getPortfolio();
     console.log(`💰 Cash Balance: ₹${portfolio.cash}`);
+    console.log(`\n portfolio: ${portfolio.holdings}`);
+    console.log(`\n total value: ${portfolio.totalPortfolioValue}`);
 
-    // 3. Buy RELIANCE (Market Order)
-    console.log("\n3. Placing BUY Order for RELIANCE (10 Qty)...");
-    const buyOrder = await sdk.placeOrder("RELIANCE", "BUY", 10);
-    console.log(`✅ Order Executed! ID: ${buyOrder.id} at Price: ₹${buyOrder.price}`);
+    // Buy BAJAJ (Market Order)
+    console.log("\nPlacing BUY Order for BAJAJ (10 Qty)...");
+    const buyOrder = await sdk.placeOrder("BAJAJ", "BUY", 10 , "MARKET");
+    console.log(`Order Executed, ID: ${buyOrder.id} at Price: ₹${buyOrder.price}`);
 
-    // 4. Check Wallet again
+    // Check Wallet again
     portfolio = await sdk.getPortfolio();
-    console.log(`💰 New Cash Balance: ₹${portfolio.cash}`);
-    console.log("📦 Holdings:", portfolio.holdings);
+    console.log(`New Cash Balance: ₹${portfolio.cash}`);
+    console.log("Holdings:", portfolio.holdings);
 
-    // 5. Sell Some Shares
-    console.log("\n5. Selling 5 RELIANCE shares...");
+    // Sell Some Shares
+    console.log("\nSelling 5 RELIANCE shares...");
     const sellOrder = await sdk.placeOrder("RELIANCE", "SELL", 5);
-    console.log(`✅ Order Sold! ID: ${sellOrder.id}`);
+    console.log(`Order Sold, ID: ${sellOrder.id}`);
 
-    // 6. Final Portfolio Check
+    // Final Portfolio Check
     portfolio = await sdk.getPortfolio();
     console.table(portfolio.holdings);
     console.log(`💰 Final Cash: ₹${portfolio.cash}`);
