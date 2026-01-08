@@ -22,7 +22,7 @@ app.use((req : Request, res : Response, next : NextFunction) => {
 
 app.use('/api/v1', apiRoutes);
 
-app.use((err: any, req: Request, res: Response) => {
+app.use((err: any, req: Request, res: Response , next : NextFunction) => {
   logger.error(`Unhandled Error: ${err.message}`);
   res.status(500).json({
     error: "Internal Server Error",
@@ -32,8 +32,8 @@ app.use((err: any, req: Request, res: Response) => {
 
 initDB().then(() => {
   app.listen(PORT, () => {
-    logger.info(`Server running on http://localhost:${PORT}`);
-    logger.info(`Swagger Docs available at http://localhost:${PORT}/docs`);
+    logger.info(`Server listening on http://localhost:${PORT}`);
+    logger.info(`Swagger Docs-- http://localhost:${PORT}/docs`);
   });
 }).catch(err => {
   console.error("Failed to init DB", err);

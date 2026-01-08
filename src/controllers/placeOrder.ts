@@ -93,7 +93,7 @@ export const placeOrder = async (req: Request, res: Response) => {
       });
   
     } catch (err: any) {
-      logger.error(err.message);
+      console.error(err.message);
       res.status(500).json({ error: "Internal Server Error" });
     }
   };
