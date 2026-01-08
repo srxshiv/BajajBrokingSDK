@@ -1,143 +1,146 @@
-// src/controllers/tradeController.ts (Updated)
-
 import { Request, Response } from 'express';
-import { db } from '../model/store';
+import { getDB } from '../config/db'; // Use the new DB accessor
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../config/logger';
-import { Order, PortfolioPosition } from '../types';
 
-export const getInstruments = (req: Request, res: Response) => {
-  console.log("request aayi")
-  res.json(db.instruments);
+export const getInstruments = async (req: Request, res: Response) => {
+  try {
+    const db = getDB();
+    const instruments = await db.all('SELECT * FROM instruments');
+    res.json(instruments);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch instruments' });
+  }
 };
 
-export const placeOrder = (req: Request, res: Response) => {
-  // 1. Extract Data
+export const placeOrder = async (req: Request, res: Response) => {
+  const db = getDB();
   const { symbol, type, style, quantity, price } = req.body;
 
-  // 2. Validate Inputs
+  // 1. Validate Inputs
   if (!quantity || quantity <= 0) {
     return res.status(400).json({ error: "Quantity must be greater than 0" });
   }
 
-  const instrument = db.instruments.find(i => i.symbol === symbol);
-  if (!instrument) {
-    return res.status(404).json({ error: "Instrument not found" });
-  }
-
-  // 3. Determine Execution Price
-  // MARKET orders execute at current instrument price. LIMIT orders use the user's price.
-  const executionPrice = style === 'MARKET' ? instrument.price : price;
-
-  if (!executionPrice) {
-    return res.status(400).json({ error: "Price is required for LIMIT orders" });
-  }
-
-  // 4. Validate Funds (Simulation Logic)
-  const totalCost = executionPrice * quantity;
-  if (type === 'BUY') {
-    if (db.userCash < totalCost) {
-      return res.status(400).json({ 
-        error: "Insufficient Funds", 
-        details: `Required: ${totalCost}, Available: ${db.userCash}` 
-      });
+  try {
+    // 2. Fetch Instrument & User Cash
+    const instrument = await db.get('SELECT * FROM instruments WHERE symbol = ?', [symbol]);
+    if (!instrument) {
+      return res.status(404).json({ error: "Instrument not found" });
     }
-  } else if (type === 'SELL') {
-    const currentHolding = db.userPortfolio.get(symbol);
-    if (!currentHolding || currentHolding.quantity < quantity) {
-      return res.status(400).json({ error: "Insufficient Holdings to Sell" });
+
+    const user = await db.get('SELECT * FROM users WHERE id = ?', ['default_user']);
+    let userCash = user.cash;
+
+    // 3. Determine Execution Price
+    const executionPrice = style === 'MARKET' ? instrument.price : price;
+    if (!executionPrice) {
+      return res.status(400).json({ error: "Price is required for LIMIT orders" });
     }
-  }
 
-  // 5. Create the Order Object
-  const newOrder: Order = {
-    id: uuidv4(),
-    symbol,
-    type,
-    style,
-    quantity,
-    price: executionPrice,
-    status: style === 'MARKET' ? 'EXECUTED' : 'PLACED', // Market orders execute instantly
-    timestamp: new Date()
-  };
-
-  // 6. EXECUTION LOGIC (The "Bonus" Part)
-  if (newOrder.status === 'EXECUTED') {
+    // 4. Validate Funds / Holdings
+    const totalCost = executionPrice * quantity;
+    
     if (type === 'BUY') {
-      // Deduct Cash
-      db.userCash -= totalCost;
-
-      // Update Portfolio
-      const holding = db.userPortfolio.get(symbol);
-      if (holding) {
-        // Average Price Calculation: (OldCost + NewCost) / TotalQty
-        const oldCost = holding.quantity * holding.averagePrice;
-        const newTotalQty = holding.quantity + quantity;
-        const newAvgPrice = (oldCost + totalCost) / newTotalQty;
-        
-        holding.quantity = newTotalQty;
-        holding.averagePrice = newAvgPrice;
-        holding.currentValue = newTotalQty * instrument.price; 
-      } else {
-        // New Position
-        db.userPortfolio.set(symbol, {
-          symbol,
-          quantity,
-          averagePrice: executionPrice,
-          currentValue: totalCost
-        });
+      if (userCash < totalCost) {
+        return res.status(400).json({ error: "Insufficient Funds" });
       }
     } else if (type === 'SELL') {
-      // Add Cash
-      db.userCash += totalCost;
-
-      // Update Portfolio
-      const holding = db.userPortfolio.get(symbol)!; // Validated above
-      holding.quantity -= quantity;
-      
-      // If quantity is 0, remove from portfolio
-      if (holding.quantity === 0) {
-        db.userPortfolio.delete(symbol);
-      } else {
-        holding.currentValue = holding.quantity * instrument.price;
+      const holding = await db.get('SELECT * FROM portfolio WHERE symbol = ?', [symbol]);
+      if (!holding || holding.quantity < quantity) {
+        return res.status(400).json({ error: "Insufficient Holdings to Sell" });
       }
     }
-  }
 
-  // 7. Save and Return
-  db.orders.set(newOrder.id, newOrder);
-  
-  logger.info(`Order Processed: ${newOrder.id} - ${newOrder.status}`);
-  
-  // Return the order along with remaining cash for better UX
-  res.status(201).json({
-    order: newOrder,
-    message: newOrder.status === 'EXECUTED' ? 'Order Executed Successfully' : 'Order Placed',
-    remainingCash: db.userCash
-  });
+    // 5. Create Order
+    const orderId = uuidv4();
+    const status = style === 'MARKET' ? 'EXECUTED' : 'PLACED';
+    const timestamp = new Date().toISOString();
+
+    await db.run(
+      `INSERT INTO orders (id, symbol, type, style, quantity, price, status, timestamp) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [orderId, symbol, type, style, quantity, executionPrice, status, timestamp]
+    );
+
+    // 6. EXECUTION LOGIC (Transaction)
+    if (status === 'EXECUTED') {
+      if (type === 'BUY') {
+        // Deduct Cash
+        await db.run('UPDATE users SET cash = cash - ? WHERE id = ?', [totalCost, 'default_user']);
+        
+        // Update/Insert Portfolio
+        const holding = await db.get('SELECT * FROM portfolio WHERE symbol = ?', [symbol]);
+        if (holding) {
+          const newQty = holding.quantity + quantity;
+          const newAvg = ((holding.quantity * holding.averagePrice) + totalCost) / newQty;
+          await db.run('UPDATE portfolio SET quantity = ?, averagePrice = ? WHERE symbol = ?', 
+            [newQty, newAvg, symbol]);
+        } else {
+          await db.run('INSERT INTO portfolio (symbol, quantity, averagePrice) VALUES (?, ?, ?)', 
+            [symbol, quantity, executionPrice]);
+        }
+      } else if (type === 'SELL') {
+        // Add Cash
+        await db.run('UPDATE users SET cash = cash + ? WHERE id = ?', [totalCost, 'default_user']);
+        
+        // Update Portfolio
+        const holding = await db.get('SELECT * FROM portfolio WHERE symbol = ?', [symbol]);
+        const newQty = holding.quantity - quantity;
+        
+        if (newQty === 0) {
+          await db.run('DELETE FROM portfolio WHERE symbol = ?', [symbol]);
+        } else {
+          await db.run('UPDATE portfolio SET quantity = ? WHERE symbol = ?', [newQty, symbol]);
+        }
+      }
+    }
+
+    logger.info(`Order Processed: ${orderId} - ${status}`);
+    
+    // Fetch updated cash for response
+    const updatedUser = await db.get('SELECT cash FROM users WHERE id = ?', ['default_user']);
+
+    res.status(201).json({
+      order: { id: orderId, symbol, status, price: executionPrice },
+      message: status === 'EXECUTED' ? 'Order Executed Successfully' : 'Order Placed',
+      remainingCash: updatedUser.cash
+    });
+
+  } catch (err: any) {
+    logger.error(err.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
-export const getPortfolio = (req: Request, res: Response) => {
-    // Recalculate current values based on latest market prices
-    const portfolioArray = Array.from(db.userPortfolio.values()).map(position => {
-        const instrument = db.instruments.find(i => i.symbol === position.symbol);
-        if (instrument) {
-            position.currentValue = position.quantity * instrument.price;
-        }
-        return position;
+export const getPortfolio = async (req: Request, res: Response) => {
+    const db = getDB();
+    
+    const user = await db.get('SELECT cash FROM users WHERE id = ?', ['default_user']);
+    const holdings = await db.all('SELECT * FROM portfolio');
+    const instruments = await db.all('SELECT * FROM instruments');
+
+    // Map current values
+    const portfolioWithValues = holdings.map(h => {
+        const inst = instruments.find(i => i.symbol === h.symbol);
+        const currentPrice = inst ? inst.price : h.averagePrice;
+        return {
+            ...h,
+            currentValue: h.quantity * currentPrice
+        };
     });
+
+    const totalValue = portfolioWithValues.reduce((acc, curr) => acc + curr.currentValue, 0);
 
     res.json({
-        cash: db.userCash,
-        holdings: portfolioArray,
-        totalPortfolioValue: portfolioArray.reduce((acc, curr) => acc + curr.currentValue, 0)
+        cash: user.cash,
+        holdings: portfolioWithValues,
+        totalPortfolioValue: totalValue
     });
 };
-export const getTrades = (req: Request, res: Response) => {
-  // Filter only 'EXECUTED' orders to simulate a "Trade History"
-  const trades = Array.from(db.orders.values())
-                      .filter(order => order.status === 'EXECUTED')
-                      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  
+
+export const getTrades = async (req: Request, res: Response) => {
+  const db = getDB();
+  const trades = await db.all(`SELECT * FROM orders WHERE status = 'EXECUTED' ORDER BY timestamp DESC`);
   res.json(trades);
 };
