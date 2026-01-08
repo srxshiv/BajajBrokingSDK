@@ -1,5 +1,8 @@
 import { Router } from 'express';
-import { getInstruments, placeOrder, getPortfolio,getTrades} from '../controllers/tradeController';
+import { getInstruments } from '../controllers/getInstruments';
+import { getTrades } from '../controllers/getTrades';
+import { placeOrder } from '../controllers/placeOrder';
+import { getPortfolio } from '../controllers/getPortfolio';
 
 const router = Router();
 

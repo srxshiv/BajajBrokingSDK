@@ -4,7 +4,7 @@ import bodyParser from 'body-parser';
 import apiRoutes from './routes/api';
 import { logger } from './config/logger';
 import { setupSwagger } from './config/swagger';
-import { initDB } from './config/db'; // Import this
+import { initDB } from './config/db';
 import { Request, Response, NextFunction } from 'express';
 
 const app = express();

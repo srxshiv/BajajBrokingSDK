@@ -26,8 +26,8 @@ export const initDB = async () => {
     CREATE TABLE IF NOT EXISTS orders (
       id TEXT PRIMARY KEY,
       symbol TEXT,
-      type TEXT,      -- 'BUY' or 'SELL'
-      style TEXT,     -- 'MARKET' or 'LIMIT'
+      type TEXT,      
+      style TEXT,     
       quantity INTEGER,
       price REAL,
       status TEXT,
