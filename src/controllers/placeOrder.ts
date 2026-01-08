@@ -17,7 +17,7 @@ export const placeOrder = async (req: Request, res: Response) => {
         return res.status(404).json({ error: "instrument not found" });
       }
   
-      const user = await db.get('SELECT * FROM users WHERE id = ?', ['default_user']);
+      const user = await db.get('SELECT * FROM users WHERE id = ?', ['shiv_rajput']);
       let userCash = user.cash;
   
       const executionPrice = style === 'MARKET' ? instrument.lastTradedPrice : price;

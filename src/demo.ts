@@ -2,8 +2,6 @@ import { BajajBrokingSDK } from './sdk/BajajBrokingSDK';
 
 async function main() {
   const sdk = new BajajBrokingSDK();
-  
-  console.log("🚀 Starting Trading Simulation...\n");
 
   try {
     // View Instruments
@@ -29,17 +27,17 @@ async function main() {
     console.log("Holdings:", portfolio.holdings);
 
     // Sell Some Shares
-    console.log("\nSelling 5 RELIANCE shares...");
-    const sellOrder = await sdk.placeOrder("RELIANCE", "SELL", 5);
+    console.log("\nSelling 5 BAJAJ shares...");
+    const sellOrder = await sdk.placeOrder("BAJAJ", "SELL", 5);
     console.log(`Order Sold, ID: ${sellOrder.id}`);
 
     // Final Portfolio Check
     portfolio = await sdk.getPortfolio();
     console.table(portfolio.holdings);
-    console.log(`💰 Final Cash: ₹${portfolio.cash}`);
+    console.log(`Final Cash: ₹${portfolio.cash}`);
 
   } catch (error: any) {
-    console.error("❌ Simulation Failed:", error.message);
+    console.error("demo Failed:", error.message);
   }
 }
 
