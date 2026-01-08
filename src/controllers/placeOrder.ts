@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { getDB } from '../config/db'; 
-import { v4 } from 'uuid';
 import { logger } from '../config/logger';
 
 export const placeOrder = async (req: Request, res: Response) => {
@@ -39,7 +38,7 @@ export const placeOrder = async (req: Request, res: Response) => {
       }
   
 
-      const orderId = v4();
+      const orderId = Math.trunc(Math.floor(Math.random() * 9000000000) + 1000000000);
       const status = style === 'MARKET' ? 'EXECUTED' : 'PLACED';
       const timestamp = new Date().toISOString();
   
