@@ -26,8 +26,8 @@ export const initDB = async () => {
     CREATE TABLE IF NOT EXISTS orders (
       id TEXT PRIMARY KEY,
       symbol TEXT,
-      type TEXT,
-      style TEXT,
+      type TEXT,      -- 'BUY' or 'SELL'
+      style TEXT,     -- 'MARKET' or 'LIMIT'
       quantity INTEGER,
       price REAL,
       status TEXT,
@@ -44,12 +44,13 @@ export const initDB = async () => {
   const instruments = await db.all('SELECT * FROM instruments');
   if (instruments.length === 0) {
     await db.run(`INSERT INTO instruments (symbol, name, type, price) VALUES 
-      ('RELIANCE', 'Reliance Industries', 'EQUITY', 2500),
-      ('TCS', 'Tata Consultancy Svcs', 'EQUITY', 3400),
-      ('INFY', 'Infosys', 'EQUITY', 1600)`);
+      ('Bajaj', 'Bajaj Motors', 'EQUITY', 2000),
+      ('NIFTY50', 'nifty 50 index', 'EQUITY', 4000),
+      ('TCS', 'Tata consultancy service', 'EQUITY', 2500),
+      ('INFY', 'Infosys', 'EQUITY', 1000)`);
     
-    await db.run(`INSERT INTO users (id, cash) VALUES ('default_user', 100000)`);
-    console.log("✅ Database initialized with seed data.");
+    await db.run(`INSERT INTO users (id, cash) VALUES ('default_user', 1000000)`);
+    console.log(" added mock dagta for testing.");
   }
 
   return db;
