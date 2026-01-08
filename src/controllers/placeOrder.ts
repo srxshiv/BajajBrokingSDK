@@ -7,28 +7,24 @@ export const placeOrder = async (req: Request, res: Response) => {
     const db = getDB();
     const { symbol, type, style, quantity, price } = req.body;
   
-    // 1. Validate Inputs
     if (!quantity || quantity <= 0) {
-      return res.status(400).json({ error: "Quantity must be greater than 0" });
+      return res.status(400).json({ error: "Quantity should be more than 0" });
     }
   
     try {
-      // 2. Fetch Instrument & User Cash
       const instrument = await db.get('SELECT * FROM instruments WHERE symbol = ?', [symbol]);
       if (!instrument) {
-        return res.status(404).json({ error: "Instrument not found" });
+        return res.status(404).json({ error: "instrument not found" });
       }
   
       const user = await db.get('SELECT * FROM users WHERE id = ?', ['default_user']);
       let userCash = user.cash;
   
-      // 3. Determine Execution Price
-      const executionPrice = style === 'MARKET' ? instrument.price : price;
+      const executionPrice = style === 'MARKET' ? instrument.lastTradedPrice : price;
       if (!executionPrice) {
         return res.status(400).json({ error: "Price is required for LIMIT orders" });
-      }
+      } 
   
-      // 4. Validate Funds / Holdings
       const totalCost = executionPrice * quantity;
       
       if (type === 'BUY') {
@@ -42,7 +38,7 @@ export const placeOrder = async (req: Request, res: Response) => {
         }
       }
   
-      // 5. Create Order
+
       const orderId = uuidv4();
       const status = style === 'MARKET' ? 'EXECUTED' : 'PLACED';
       const timestamp = new Date().toISOString();
@@ -53,13 +49,13 @@ export const placeOrder = async (req: Request, res: Response) => {
         [orderId, symbol, type, style, quantity, executionPrice, status, timestamp]
       );
   
-      // 6. EXECUTION LOGIC (Transaction)
+
       if (status === 'EXECUTED') {
         if (type === 'BUY') {
-          // Deduct Cash
-          await db.run('UPDATE users SET cash = cash - ? WHERE id = ?', [totalCost, 'default_user']);
+
+          await db.run('UPDATE users SET cash = cash - ? WHERE id = ?', [totalCost, 'shiv_rajput']);
           
-          // Update/Insert Portfolio
+
           const holding = await db.get('SELECT * FROM portfolio WHERE symbol = ?', [symbol]);
           if (holding) {
             const newQty = holding.quantity + quantity;
@@ -71,10 +67,10 @@ export const placeOrder = async (req: Request, res: Response) => {
               [symbol, quantity, executionPrice]);
           }
         } else if (type === 'SELL') {
-          // Add Cash
-          await db.run('UPDATE users SET cash = cash + ? WHERE id = ?', [totalCost, 'default_user']);
+
+          await db.run('UPDATE users SET cash = cash + ? WHERE id = ?', [totalCost, 'shiv_rajput']);
           
-          // Update Portfolio
+
           const holding = await db.get('SELECT * FROM portfolio WHERE symbol = ?', [symbol]);
           const newQty = holding.quantity - quantity;
           
@@ -86,14 +82,13 @@ export const placeOrder = async (req: Request, res: Response) => {
         }
       }
   
-      logger.info(`Order Processed: ${orderId} - ${status}`);
+      logger.info(`Order processed: ${orderId} - ${status}`);
       
-      // Fetch updated cash for response
-      const updatedUser = await db.get('SELECT cash FROM users WHERE id = ?', ['default_user']);
+      const updatedUser = await db.get('SELECT cash FROM users WHERE id = ?', ['shiv_rajput']);
   
       res.status(201).json({
         order: { id: orderId, symbol, status, price: executionPrice },
-        message: status === 'EXECUTED' ? 'Order Executed Successfully' : 'Order Placed',
+        message: status === 'EXECUTED' ? 'Order Executed sucessfully' : 'Order Placed',
         remainingCash: updatedUser.cash
       });
   

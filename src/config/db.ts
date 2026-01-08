@@ -22,7 +22,7 @@ export const initDB = async () => {
       id TEXT PRIMARY KEY,
       cash REAL
     );
-
+  
     CREATE TABLE IF NOT EXISTS orders (
       id TEXT PRIMARY KEY,
       symbol TEXT,
@@ -42,14 +42,18 @@ export const initDB = async () => {
   `);
 
   const instruments = await db.all('SELECT * FROM instruments');
+
   if (instruments.length === 0) {
-    await db.run(`INSERT INTO instruments (symbol, name, type, price) VALUES 
-      ('Bajaj', 'Bajaj Motors', 'EQUITY', 2000),
-      ('NIFTY50', 'nifty 50 index', 'EQUITY', 4000),
-      ('TCS', 'Tata consultancy service', 'EQUITY', 2500),
-      ('INFY', 'Infosys', 'EQUITY', 1000)`);
+    console.log("addind mock data in instruments")
     
-    await db.run(`INSERT INTO users (id, cash) VALUES ('default_user', 1000000)`);
+    await db.run(`INSERT INTO instruments (symbol, exchange, instrumentType, lastTradedPrice) VALUES 
+      ('Bajaj', 'NSE', 'EQUITY', 2000),
+      ('NIFTY50', 'NSE', 'INDEX', 4000),
+      ('TCS', 'BSE', 'EQUITY', 2500),
+      ('INFY', 'BSE', 'EQUITY', 1000)`);
+    
+    await db.run(`INSERT INTO users (id, cash) VALUES ('shiv_rajput', 1000000)`);
+
     console.log(" added mock dagta for testing.");
   }
 

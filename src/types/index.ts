@@ -2,7 +2,7 @@ export interface Instrument {
   symbol: string;
   name: string;
   type: 'EQUITY' | 'DERIVATIVE';
-  price: number;
+  lastTradedPrice: number;
 }
 
 export interface Order {

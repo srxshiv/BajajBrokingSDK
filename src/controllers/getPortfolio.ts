@@ -4,20 +4,19 @@ import { getDB } from '../config/db';
 export const getPortfolio = async (req: Request, res: Response) => {
     const db = getDB();
     
-    const user = await db.get('SELECT cash FROM users WHERE id = ?', ['default_user']);
+    const user = await db.get('SELECT cash FROM users WHERE id = ?', ['shiv_rajput']);
     const holdings = await db.all('SELECT * FROM portfolio');
     const instruments = await db.all('SELECT * FROM instruments');
 
-    // Map current values
-    const portfolioWithValues = holdings.map(h => {
-        const inst = instruments.find(i => i.symbol === h.symbol);
-        const currentPrice = inst ? inst.price : h.averagePrice;
+    const portfolioWithValues = holdings.map(holding => {
+        const stock = instruments.find(s => s.symbol === holding.symbol);
+        const currentPrice = stock ? stock.lastTradedPrice : holding.averagePrice;
         return {
-            ...h,
-            currentValue: h.quantity * currentPrice
+            ...holding,
+            currentValue: holding.quantity * currentPrice
         };
     });
-
+  
     const totalValue = portfolioWithValues.reduce((acc, curr) => acc + curr.currentValue, 0);
 
     res.json({
