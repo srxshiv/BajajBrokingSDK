@@ -62,7 +62,7 @@ const swaggerDocument = {
             required: true,    
             schema: {
               type: 'string',
-              example: '7aec6fcc-fceb-4591-9e40-c79e2004f2f3'
+              example: '3051346660'
             },
             description: 'unique Order ID'
           }

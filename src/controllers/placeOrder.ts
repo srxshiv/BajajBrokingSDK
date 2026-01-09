@@ -38,7 +38,7 @@ export const placeOrder = async (req: Request, res: Response) => {
       }
   
 
-      const orderId = Math.trunc(Math.floor(Math.random() * 9000000000) + 1000000000);
+      const orderId = Math.floor(Math.random() * 9000000000 + 1000000000).toString();;
       const status = style === 'MARKET' ? 'EXECUTED' : 'PLACED';
       const timestamp = new Date().toISOString();
   
